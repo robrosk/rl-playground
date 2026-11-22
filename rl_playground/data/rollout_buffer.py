@@ -39,4 +39,8 @@ def iterate_minibatches(batch: Batch, size: int, rng: np.random.Generator) -> It
     Every row appears exactly once per pass; the last chunk may be smaller. The old PPO ran
     full-batch epochs, which takes one large step per epoch instead of many small ones.
     """
-    raise NotImplementedError
+    if size < 1:
+        raise ValueError("minibatch size must be at least 1")
+    order = rng.permutation(len(batch))
+    for start in range(0, len(order), size):
+        yield batch.take(order[start:start + size])

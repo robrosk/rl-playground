@@ -5,29 +5,39 @@ from __future__ import annotations
 
 import torch
 from torch import nn
+from torch.distributions import Categorical, Independent, Normal
+
+
+def _linear(in_dim: int, out_dim: int, gain: float) -> nn.Linear:
+    layer = nn.Linear(in_dim, out_dim)
+    nn.init.orthogonal_(layer.weight, gain=gain)
+    nn.init.zeros_(layer.bias)
+    return layer
 
 
 class CategoricalHead(nn.Module):
-    """Logits to ``Categorical``."""
+    """Logits to ``Categorical``. A small init keeps the first policy close to uniform."""
 
     def __init__(self, in_dim: int, n_actions: int):
         super().__init__()
-        raise NotImplementedError
+        self.logits = _linear(in_dim, n_actions, gain=0.01)
 
     def forward(self, features: torch.Tensor) -> torch.distributions.Distribution:
-        raise NotImplementedError
+        return Categorical(logits=self.logits(features))
 
 
 class GaussianHead(nn.Module):
-    """Mean from a linear layer, a state-independent learned log std, to ``Normal``.
-    Sum log-probs over action dimensions (``Independent``)."""
+    """Mean from a linear layer and a state-independent learned log std, to a diagonal Gaussian.
+    ``Independent`` sums log-probs and entropies over action dimensions."""
 
     def __init__(self, in_dim: int, action_dim: int, init_log_std: float = 0.0):
         super().__init__()
-        raise NotImplementedError
+        self.mean = _linear(in_dim, action_dim, gain=0.01)
+        self.log_std = nn.Parameter(torch.full((action_dim,), float(init_log_std)))
 
     def forward(self, features: torch.Tensor) -> torch.distributions.Distribution:
-        raise NotImplementedError
+        mean = self.mean(features)
+        return Independent(Normal(mean, self.log_std.exp().expand_as(mean)), 1)
 
 
 class ValueHead(nn.Module):
@@ -35,10 +45,10 @@ class ValueHead(nn.Module):
 
     def __init__(self, in_dim: int):
         super().__init__()
-        raise NotImplementedError
+        self.out = _linear(in_dim, 1, gain=1.0)
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError
+        return self.out(features).squeeze(-1)
 
 
 class QHead(nn.Module):
@@ -46,7 +56,7 @@ class QHead(nn.Module):
 
     def __init__(self, in_dim: int, n_actions: int):
         super().__init__()
-        raise NotImplementedError
+        self.out = nn.Linear(in_dim, n_actions)
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError
+        return self.out(features)

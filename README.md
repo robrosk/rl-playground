@@ -39,9 +39,15 @@ Derivations are in `docs/derivations/`. The design and its patterns are in
 
 A scaffold. The plumbing is written and tested: value objects, configs, the registry,
 callbacks, the `Runner` template, the runners, the environments, the MDP model and the
-factory. Every piece of math and learning is a stub that raises `NotImplementedError` with
-its contract in the docstring. The tests carry hand-computed expected values and fail until
-the stub they cover is filled in.
+factory. So is the engineering boilerplate: the MLP and CNN encoders, the policy, value and Q
+heads, `ActorCritic`, the replay and rollout buffers, the step collector, the decay schedules,
+softmax exploration, and the forward passes of `NeuralQ` and `NeuralV`.
+
+What is left is the RL itself, 43 stubs that raise `NotImplementedError` with their contract
+in the docstring: the Bellman backups, targets and returns, the four planners, the tabular
+updates, epsilon-greedy and greedy action choice, `NeuralQ.update` and `sync_target`, the TD
+and PPO losses, and each algorithm's `act` and `update`. The tests carry hand-computed
+expected values and fail until the stub they cover is filled in.
 
 ## Setup
 
@@ -60,8 +66,8 @@ The planning and tabular half needs only numpy. Torch is needed from DQN on.
 2. `policies/`, `values/tabular.py`, `bellman/sampled.py`, then `algorithms/tabular/`. Tests:
    `test_policies.py`, `test_bellman_sampled.py`, `test_tabular.py`. Score each learner
    against V* from value iteration on the same Frozen Lake.
-3. `collectors/`, `data/`, `networks/`, `values/neural.py`, `losses/td.py`, then
-   `algorithms/off_policy/dqn.py`.
+3. `NeuralQ.update` and `sync_target` in `values/neural.py`, `losses/td.py`, then
+   `algorithms/off_policy/dqn.py`. The collector, buffers and networks are already written.
 4. `bellman/returns.py`, `losses/ppo.py`, then `algorithms/on_policy/ppo.py` on Acrobot.
 5. REINFORCE, A2C and Dyna-Q, each one new file on existing parts.
 

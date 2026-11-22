@@ -27,7 +27,9 @@ class LinearDecay:
 
     def value(self, step: int) -> float:
         """start at step 0, end at ``steps``, end afterwards, linear in between."""
-        raise NotImplementedError
+        if step >= self.steps:
+            return self.end
+        return self.start + (self.end - self.start) * step / self.steps
 
 
 @dataclass(frozen=True)
@@ -38,4 +40,4 @@ class ExponentialDecay:
 
     def value(self, step: int) -> float:
         """max(end, start * decay ** step)."""
-        raise NotImplementedError
+        return max(self.end, self.start * self.decay ** step)

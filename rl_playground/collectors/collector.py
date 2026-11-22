@@ -34,4 +34,25 @@ class StepCollector:
 
         The stored ``next_obs`` is always the true next observation, never the reset one.
         """
-        raise NotImplementedError
+        if self.obs is None:
+            self.obs, _ = self.env.reset(seed=self.seed)
+        out = self.act(self.obs)
+        result = self.env.step(out.action)
+        transition = Transition(
+            obs=self.obs,
+            action=out.action,
+            reward=result.reward,
+            next_obs=result.obs,
+            terminated=result.terminated,
+            truncated=result.truncated,
+            log_prob=out.log_prob,
+            value=out.value,
+        )
+        self._episode_return += result.reward
+        if result.done:
+            self.episode_returns.append(self._episode_return)
+            self._episode_return = 0.0
+            self.obs, _ = self.env.reset()
+        else:
+            self.obs = result.obs
+        return transition

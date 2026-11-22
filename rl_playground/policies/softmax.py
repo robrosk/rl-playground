@@ -12,7 +12,10 @@ class Softmax:
         self.rng = np.random.default_rng(seed)
 
     def probs(self, q_row, step: int = 0) -> np.ndarray:
-        raise NotImplementedError
+        logits = np.asarray(q_row, dtype=np.float64) / self.temperature
+        weights = np.exp(logits - logits.max())
+        return weights / weights.sum()
 
     def act(self, q_row, step: int = 0) -> int:
-        raise NotImplementedError
+        p = self.probs(q_row, step)
+        return int(self.rng.choice(len(p), p=p))
