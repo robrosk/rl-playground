@@ -19,7 +19,8 @@ class A2C(Learner):
         self.ac = actor_critic or build_actor_critic(obs_space, action_space, config.hidden)
         self.optimizer = torch.optim.Adam(self.ac.parameters(), lr=config.lr)
 
-    def act(self, obs, explore: bool = True) -> ActionOut:
+    def act(self, obs, explore: bool = True, mask=None) -> ActionOut:
+        """As PPO.act, mask included."""
         raise NotImplementedError
 
     def update(self, batch):

@@ -17,8 +17,8 @@ class TD0(TabularLearner):
         self.v = TabularV(self.n_states, alpha=config.alpha)
         self.behaviour = EpsilonGreedy(Constant(1.0), self.n_actions, seed=seed)  # uniform random
 
-    def act(self, obs, explore: bool = True) -> ActionOut:
-        return ActionOut(self.behaviour.act(self.q(obs), self.steps))
+    def act(self, obs, explore: bool = True, mask=None) -> ActionOut:
+        return ActionOut(self.behaviour.act(self.q(obs), self.steps, mask))
 
     def update(self, batch):
         """[TAB-2] y = td_target(r, V(s'), terminated, gamma); self.v.update(s, y)."""

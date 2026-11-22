@@ -11,11 +11,12 @@ class Softmax:
         self.temperature = temperature
         self.rng = np.random.default_rng(seed)
 
-    def probs(self, q_row, step: int = 0) -> np.ndarray:
+    def probs(self, q_row, step: int = 0, mask=None) -> np.ndarray:
         logits = np.asarray(q_row, dtype=np.float64) / self.temperature
-        weights = np.exp(logits - logits.max())
+        legal = np.ones(len(logits), dtype=bool) if mask is None else np.asarray(mask, dtype=bool)
+        weights = np.where(legal, np.exp(logits - logits[legal].max()), 0.0)
         return weights / weights.sum()
 
-    def act(self, q_row, step: int = 0) -> int:
-        p = self.probs(q_row, step)
+    def act(self, q_row, step: int = 0, mask=None) -> int:
+        p = self.probs(q_row, step, mask)
         return int(self.rng.choice(len(p), p=p))

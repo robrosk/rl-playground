@@ -54,6 +54,10 @@ class Transition:
     truncated: bool
     log_prob: float | None = None
     value: float | None = None
+    # [MASK-2] legal actions where the env has them: in ``obs`` (for acting and for PPO's
+    # re-evaluation) and in ``next_obs`` (for the max in a masked Bellman target)
+    mask: Any = None
+    next_mask: Any = None
 
 
 @dataclass(frozen=True)
@@ -71,6 +75,8 @@ class Batch:
     next_actions: Any = None  # filled by SARSA-style learners when they pick a'
     advantages: Any = None  # filled by on-policy learners before minibatching
     returns: Any = None
+    masks: Any = None  # [B, A] bool, legal actions in obs; None when the env has no masks
+    next_masks: Any = None  # [B, A] bool, legal actions in next_obs
 
     def __len__(self) -> int:
         return len(self.rewards)
@@ -104,4 +110,6 @@ class Batch:
             truncated=column("truncated", np.float64),
             log_probs=column("log_prob", np.float64),
             values=column("value", np.float64),
+            masks=column("mask", bool),
+            next_masks=column("next_mask", bool),
         )

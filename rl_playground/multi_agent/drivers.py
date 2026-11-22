@@ -48,7 +48,8 @@ class ParallelDriver(_Returns):
         if self.obs is None:
             self.obs, _ = self.env.reset(seed=self.seed if self.episodes == 0 else None)
         acting = [a for a in self.env.agents if a in self.obs]
-        outs = {a: self.act(a, self.obs[a], self.env.action_mask(a)) for a in acting}
+        masks = {a: self.env.action_mask(a) for a in acting}
+        outs = {a: self.act(a, self.obs[a], masks[a]) for a in acting}
         results = self.env.step({a: out.action for a, out in outs.items()})
         game_over = not self.env.agents
 
@@ -66,6 +67,8 @@ class ParallelDriver(_Returns):
                 truncated=truncated,
                 log_prob=out.log_prob,
                 value=out.value,
+                mask=masks[agent],
+                next_mask=self.env.action_mask(agent),
             )))
             self._credit(agent, result.reward)
 
@@ -87,7 +90,7 @@ class TurnBasedDriver(_Returns):
         self.env = env
         self.act = act
         self.seed = seed
-        self._pending: Dict[str, Tuple[object, ActionOut]] = {}
+        self._pending: Dict[str, Tuple[object, object, ActionOut]] = {}  # obs, mask, out
         self._started = False
         self._init_returns(env.possible_agents)
 
@@ -101,8 +104,9 @@ class TurnBasedDriver(_Returns):
         agent = self.env.current_agent
         obs, result = self.env.last()
         emitted: Emitted = []
+        mask = self.env.action_mask(agent)  # read after last(), which refreshes it
         if agent in self._pending:
-            prev_obs, out = self._pending.pop(agent)
+            prev_obs, prev_mask, out = self._pending.pop(agent)
             emitted.append((agent, Transition(
                 obs=prev_obs,
                 action=out.action,
@@ -112,14 +116,16 @@ class TurnBasedDriver(_Returns):
                 truncated=result.truncated,
                 log_prob=out.log_prob,
                 value=out.value,
+                mask=prev_mask,
+                next_mask=mask,
             )))
         self._credit(agent, result.reward)
 
         if result.done:
             self.env.step(None)  # [MA-5] a finished agent's last turn takes no action
         else:
-            out = self.act(agent, obs, self.env.action_mask(agent))
-            self._pending[agent] = (obs, out)
+            out = self.act(agent, obs, mask)
+            self._pending[agent] = (obs, mask, out)
             self.env.step(out.action)
 
         if not self.env.agents:
@@ -132,8 +138,8 @@ class TurnBasedDriver(_Returns):
         """Moves the game ended before their agent's next turn. PettingZoo gives every agent
         a final turn, so this is for envs that do not; the move is marked truncated."""
         emitted = [
-            (agent, Transition(obs, out.action, 0.0, obs, False, True, out.log_prob, out.value))
-            for agent, (obs, out) in self._pending.items()
+            (agent, Transition(obs, out.action, 0.0, obs, False, True, out.log_prob, out.value, mask, mask))
+            for agent, (obs, mask, out) in self._pending.items()
         ]
         self._pending = {}
         return emitted

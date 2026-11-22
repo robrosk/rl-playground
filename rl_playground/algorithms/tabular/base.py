@@ -27,11 +27,11 @@ class TabularLearner(Learner):
         self.behaviour = EpsilonGreedy(epsilon_schedule(config), self.n_actions, seed=seed)
         self.steps = 0  # env steps, for the epsilon schedule
 
-    def act(self, obs, explore: bool = True) -> ActionOut:
+    def act(self, obs, explore: bool = True, mask=None) -> ActionOut:
         # [TAB-1] behave epsilon-greedily while learning, greedily when evaluated
         if not explore:
-            return ActionOut(greedy_action(self.q(obs)))
-        action = self.behaviour.act(self.q(obs), self.steps)
+            return ActionOut(greedy_action(self.q(obs), mask))
+        action = self.behaviour.act(self.q(obs), self.steps, mask)
         self.steps += 1
         return ActionOut(action)
 

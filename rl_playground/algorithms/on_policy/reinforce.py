@@ -21,8 +21,9 @@ class REINFORCE(Learner):
         self.optimizer = torch.optim.Adam(self.ac.parameters(), lr=config.lr)
         self.rng = np.random.default_rng(seed)
 
-    def act(self, obs, explore: bool = True) -> ActionOut:
-        """Sample from pi(. | s) with ``self.ac.act``; take the mode when not exploring."""
+    def act(self, obs, explore: bool = True, mask=None) -> ActionOut:
+        """Sample from pi(. | s) with ``self.ac.act``; take the mode when not exploring. Pass
+        ``mask`` through, and ``batch.masks`` to ``evaluate`` in update."""
         raise NotImplementedError
 
     def update(self, batch):

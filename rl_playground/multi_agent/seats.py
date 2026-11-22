@@ -25,7 +25,6 @@ class PolicyLearner:
     family = "fixed"
     tabular = False
     update_on_episode_end = False
-    uses_action_mask = True
 
     def __init__(self, policy: AgentPolicy):
         self.policy = policy
@@ -71,10 +70,10 @@ class Seat:
     updates: int = field(default=0)
 
     def act(self, agent: str, obs, mask: Optional[np.ndarray], explore: bool = True) -> ActionOut:
-        """[MA-2] The legal-move mask goes only to learners that say they use it."""
-        if getattr(self.learner, "uses_action_mask", False):
-            return self.learner.act(obs, explore, mask=mask)
-        return self.learner.act(obs, explore)
+        """[MA-2] The legal-move mask goes to the learner whenever the game has one."""
+        if mask is None:
+            return self.learner.act(obs, explore)
+        return self.learner.act(obs, explore, mask=mask)
 
     def record(self, agent: str, transition: Transition) -> None:
         self.schedule.add(agent, transition)

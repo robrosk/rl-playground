@@ -43,10 +43,9 @@ in any seat of any game.
 
 - **[MA-1]** Match agents to seats (`multi_agent/config.py::assign`). First match wins;
   a shared spec is one seat, any other spec is one seat per agent.
-- **[MA-2]** A seat acts (`multi_agent/seats.py::Seat.act`). The legal-move mask goes only
-  to learners that set `uses_action_mask = True`. The library's learners do not yet, so on
-  board games they learn that illegal moves lose. Adding masked logits to `CategoricalHead`
-  and masked argmax to `greedy_action` is a good exercise.
+- **[MA-2]** A seat acts (`multi_agent/seats.py::Seat.act`). When the game has a legal-move
+  mask, the learner gets it as `act(obs, explore, mask=...)`, and each transition carries
+  `mask` and `next_mask`. What a learner does with them is in `docs/masking.md`.
 - **[MA-3]** Parallel games (`multi_agent/drivers.py::ParallelDriver`): every live agent acts,
   the env steps once, and each agent that acted gets one transition. An agent the game
   stops without a verdict is marked truncated, so its value bootstraps.

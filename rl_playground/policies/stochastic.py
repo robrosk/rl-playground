@@ -7,5 +7,5 @@ from typing import Protocol, Tuple
 
 
 class StochasticPolicy(Protocol):
-    def act(self, obs, deterministic: bool = False) -> Tuple[object, object, object]:
+    def act(self, obs, deterministic: bool = False, mask=None) -> Tuple[object, object, object]:
         """(action, log_prob, value)."""

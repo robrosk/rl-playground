@@ -27,9 +27,10 @@ class PPO(Learner):
         ])
         self.rng = np.random.default_rng(seed)
 
-    def act(self, obs, explore: bool = True) -> ActionOut:
+    def act(self, obs, explore: bool = True, mask=None) -> ActionOut:
         """[PPO-1] ``self.ac.act`` on one observation; return action, log-prob and value as
-        plain Python or numpy values so the collector stores them in the Transition."""
+        plain Python or numpy values so the collector stores them in the Transition.
+        [MASK-3] Pass ``mask`` (as a [1, A] bool tensor) so the logits of illegal moves drop out."""
         raise NotImplementedError
 
     def update(self, batch: Batch) -> Metrics:
@@ -39,7 +40,9 @@ class PPO(Learner):
         [PPO-3] advantages, returns = gae(...) from bellman.returns.
         [PPO-4] normalize advantages over the whole rollout.
         For each of config.epochs, for each minibatch from data.iterate_minibatches:
-            [PPO-5] log_probs, entropy, values = self.ac.evaluate(obs, actions)
+            [PPO-5] log_probs, entropy, values = self.ac.evaluate(obs, actions, masks)
+                    with the minibatch's ``masks`` (None where the env has none): the
+                    new and old log-probs must come from the same masked distribution.
             [PPO-6] [PPO-7] [PPO-8] total, metrics = self.loss({...named inputs...})
             [PPO-9] zero_grad, backward, clip_grad_norm_(config.max_grad_norm), step
         Return metrics averaged over minibatches.

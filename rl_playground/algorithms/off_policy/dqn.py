@@ -28,14 +28,17 @@ class DQN(Learner):
         self.steps = 0  # env steps
         self.updates = 0  # gradient steps
 
-    def act(self, obs, explore: bool = True) -> ActionOut:
+    def act(self, obs, explore: bool = True, mask=None) -> ActionOut:
         """[DQN-1] Q values for one observation from ``self.q``; epsilon-greedy on env steps
-        when exploring, greedy otherwise."""
+        when exploring, greedy otherwise. [MASK-4] [MASK-5] Hand ``mask`` to both, so the
+        agent never picks an illegal move."""
         raise NotImplementedError
 
     def update(self, batch: Batch) -> Metrics:
         """[DQN-4] y = double_q_target(r, Q_online(s'), Q_target(s'), terminated, gamma)
         (q_learning_target on Q_target(s') when config.double is False).
+        [MASK-6] Pass ``next_mask=batch.next_masks`` (None where the env has no masks), so the
+        target only looks at moves that were legal in s'.
         [DQN-5] [DQN-6] self.q.update(s, a, y).
         [DQN-7] sync the target every config.target_update_every updates, or Polyak with tau."""
         raise NotImplementedError

@@ -41,3 +41,5 @@ d is `terminated` only. A truncated transition still bootstraps.
 
 **[DQN-7]** Hard: theta_target <- theta every `target_update_every` updates.
 Polyak: theta_target <- tau theta + (1 - tau) theta_target every update.
+
+On board and card games, pass the legal-move masks through: see `masking.md` ([MASK-4] to [MASK-6]).

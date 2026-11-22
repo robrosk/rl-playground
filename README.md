@@ -43,9 +43,9 @@ factory. So is the engineering boilerplate: the MLP and CNN encoders, the policy
 heads, `ActorCritic`, the replay and rollout buffers, the step collector, the decay schedules,
 softmax exploration, and the forward passes of `NeuralQ` and `NeuralV`.
 
-What is left is the RL itself, 43 stubs that raise `NotImplementedError` with their contract
+What is left is the RL itself, 44 stubs that raise `NotImplementedError` with their contract
 in the docstring: the Bellman backups, targets and returns, the four planners, the tabular
-updates, epsilon-greedy and greedy action choice, `NeuralQ.update` and `sync_target`, the TD
+updates, epsilon-greedy and greedy action choice (each with its legal-move mask), masked logits, `NeuralQ.update` and `sync_target`, the TD
 and PPO losses, and each algorithm's `act` and `update`. The tests carry hand-computed
 expected values and fail until the stub they cover is filled in.
 
@@ -86,7 +86,7 @@ python scripts/run_multi.py --env connect_four --seat player_0=ppo --seat player
 python scripts/run_multi.py --env tictactoe --seat "*=ppo:shared"   # self-play
 ```
 
-See `docs/multi_agent.md`.
+See `docs/multi_agent.md`, and `docs/masking.md` for legal-move masks in board and card games.
 
 ## Environments
 

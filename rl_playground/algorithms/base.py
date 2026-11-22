@@ -40,8 +40,9 @@ class Learner(ABC):
     update_on_episode_end = False  # Monte Carlo methods update when an episode ends
 
     @abstractmethod
-    def act(self, obs, explore: bool = True) -> ActionOut:
-        ...
+    def act(self, obs, explore: bool = True, mask=None) -> ActionOut:
+        """``mask``: bool [A] of legal actions, or None when every action is legal. A learner
+        given a mask never returns an illegal action. See docs/masking.md."""
 
     @abstractmethod
     def update(self, batch: Batch) -> Metrics:

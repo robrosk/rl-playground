@@ -8,6 +8,20 @@ from torch import nn
 from torch.distributions import Categorical, Independent, Normal
 
 
+def masked_logits(logits: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    """[MASK-3] Logits with every illegal action pushed out of the softmax.
+
+    ``logits`` is [B, A] float and ``mask`` is [B, A] bool, True where the action is legal.
+    Return logits whose ``Categorical`` puts probability 0 on illegal actions and renormalizes
+    over the legal ones, so log-probs, sampling and entropy all ignore illegal moves.
+
+    Pick the fill value with care: -inf is exact but turns 0 * log 0 into nan in some entropy
+    formulas, so many libraries use ``torch.finfo(logits.dtype).min``. The tests check that
+    the entropy stays finite and equals the entropy over the legal actions alone.
+    """
+    raise NotImplementedError
+
+
 def _linear(in_dim: int, out_dim: int, gain: float) -> nn.Linear:
     layer = nn.Linear(in_dim, out_dim)
     nn.init.orthogonal_(layer.weight, gain=gain)
@@ -22,8 +36,11 @@ class CategoricalHead(nn.Module):
         super().__init__()
         self.logits = _linear(in_dim, n_actions, gain=0.01)
 
-    def forward(self, features: torch.Tensor) -> torch.distributions.Distribution:
-        return Categorical(logits=self.logits(features))
+    def forward(self, features: torch.Tensor, mask=None) -> torch.distributions.Distribution:
+        logits = self.logits(features)
+        if mask is not None:
+            logits = masked_logits(logits, mask)
+        return Categorical(logits=logits)
 
 
 class GaussianHead(nn.Module):
@@ -35,7 +52,9 @@ class GaussianHead(nn.Module):
         self.mean = _linear(in_dim, action_dim, gain=0.01)
         self.log_std = nn.Parameter(torch.full((action_dim,), float(init_log_std)))
 
-    def forward(self, features: torch.Tensor) -> torch.distributions.Distribution:
+    def forward(self, features: torch.Tensor, mask=None) -> torch.distributions.Distribution:
+        if mask is not None:
+            raise ValueError("action masks are for discrete actions; this head is continuous")
         mean = self.mean(features)
         return Independent(Normal(mean, self.log_std.exp().expand_as(mean)), 1)
 

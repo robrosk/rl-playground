@@ -68,3 +68,5 @@ No 0.5 factor, matching the old code. Set `value_clip=None` for plain MSE.
 **[PPO-8]** L^H = -E_t[H(pi_theta(. | s_t))]. Minimizing it raises entropy.
 
 **[PPO-9]** L = L^clip + c_v L^V + c_h L^H, then clip the global grad norm to `max_grad_norm`.
+
+On board and card games, the policy masks illegal moves out of its logits: see `masking.md` ([MASK-3]).

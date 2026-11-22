@@ -120,7 +120,8 @@ class Recorder:
         self.update_on_episode_end = episode_end
         self.batches = []
 
-    def act(self, obs, explore=True):
+    def act(self, obs, explore=True, mask=None):
+        self.masks_seen = getattr(self, "masks_seen", []) + [mask]
         return ActionOut(0, log_prob=0.0, value=0.0)
 
     def update(self, batch):
