@@ -1,4 +1,4 @@
-# RL-Playground
+# rl-playground
 
 Reinforcement learning from the Bellman equation up. Planning, tabular and deep methods share
 one Bellman core and differ only in how they get data and how they store value, so every
