@@ -76,3 +76,59 @@ def test_multi_agent_env_exposes_every_agent():
     assert set(observations) == set(env.possible_agents) == {"player_0", "player_1"}
     results = env.step({"player_0": 0, "player_1": 2})  # rock beats scissors
     assert results["player_0"].reward == 1.0 and results["player_1"].reward == -1.0
+
+
+# --- the multi-agent trainer on real games ---------------------------------------------
+
+from rl_playground.build import build_multi_agent_runner  # noqa: E402
+from rl_playground.multi_agent import MultiAgentRunConfig, PolicyLearner, SeatSpec  # noqa: E402
+
+
+def _fixed(policy):
+    return lambda obs_space, action_space, seed: PolicyLearner(policy)
+
+
+def test_trainer_credits_tictactoe_moves_like_pettingzoo():
+    expected = canonical_return("player_1", {"player_1": lowest_legal, "player_2": highest_legal})
+    cfg = MultiAgentRunConfig("tictactoe", (
+        SeatSpec("player_1", make=_fixed(lowest_legal)),
+        SeatSpec("player_2", make=_fixed(highest_legal)),
+    ))
+    runner = build_multi_agent_runner(cfg, callbacks=[])
+    while runner.driver.episodes == 0:
+        runner.step()
+    assert runner.driver.episode_returns["player_1"] == [expected]
+    assert runner.driver.episode_returns["player_2"] == [-expected]
+
+
+def test_trainer_on_a_simultaneous_game():
+    cfg = MultiAgentRunConfig("rock_paper_scissors", (
+        SeatSpec("player_0", "first_legal"),  # always rock
+        SeatSpec("player_1", make=_fixed(lambda obs, mask: 1)),  # always paper
+    ))
+    runner = build_multi_agent_runner(cfg, callbacks=[]).run(30)
+    assert runner.driver.episodes > 0
+    assert all(r < 0 for r in runner.driver.episode_returns["player_0"])  # paper beats rock every round
+    assert runner.driver.episode_returns["player_1"] == [-r for r in runner.driver.episode_returns["player_0"]]
+
+
+def test_one_shared_seat_plays_every_agent_of_a_cooperative_game():
+    pytest.importorskip("mpe2")
+    cfg = MultiAgentRunConfig("simple_spread", (SeatSpec("agent_*", "random", shared=True),))
+    runner = build_multi_agent_runner(cfg, callbacks=[]).run(60)
+    assert [s.agents for s in runner.seats] == [("agent_0", "agent_1", "agent_2")]
+    assert runner.driver.episodes >= 1
+
+
+def test_ppo_and_dqn_can_sit_at_the_same_board():
+    pytest.importorskip("torch")
+    cfg = MultiAgentRunConfig("connect_four", (SeatSpec("player_0", "ppo"), SeatSpec("player_1", "dqn")))
+    runner = build_multi_agent_runner(cfg, callbacks=[])
+    learners = {s.name: type(s.learner).__name__ for s in runner.seats}
+    assert learners == {"player_0": "PPO", "player_1": "DQN"}
+
+
+def test_a_tabular_seat_on_a_vector_observation_is_refused_clearly():
+    cfg = MultiAgentRunConfig("leduc_holdem", (SeatSpec("player_0", "q_learning"), SeatSpec("*", "random")))
+    with pytest.raises(ValueError, match="needs Discrete observations"):
+        build_multi_agent_runner(cfg, callbacks=[])

@@ -8,6 +8,7 @@ from typing import Optional
 import numpy as np
 
 from rl_playground.core.types import StepResult
+from rl_playground.envs import transforms
 from rl_playground.envs.base import Box, Discrete
 
 
@@ -78,40 +79,31 @@ class TimeLimit(EnvWrapper):
         return result
 
 
-class FlattenObservation(EnvWrapper):
+class TransformObservation(EnvWrapper):
+    """Applies a transform from ``envs/transforms.py`` to every observation."""
+
+    def __init__(self, env, transform):
+        super().__init__(env)
+        self.observation_space, self._fn = transform(env.observation_space)
+
+    def reset(self, seed: Optional[int] = None):
+        obs, info = self.env.reset(seed=seed)
+        return self._fn(obs), info
+
+    def step(self, action) -> StepResult:
+        result = self.env.step(action)
+        return replace(result, obs=self._fn(result.obs))
+
+
+class FlattenObservation(TransformObservation):
     """Box observations of any shape to 1-D float vectors, for MLP encoders on board games."""
 
     def __init__(self, env):
-        super().__init__(env)
-        if not isinstance(env.observation_space, Box):
-            raise TypeError("FlattenObservation needs a Box observation space")
-        space = env.observation_space
-        self.observation_space = Box((int(np.prod(space.shape)),), space.low, space.high)
-
-    def reset(self, seed: Optional[int] = None):
-        obs, info = self.env.reset(seed=seed)
-        return np.asarray(obs, dtype=np.float32).reshape(-1), info
-
-    def step(self, action) -> StepResult:
-        result = self.env.step(action)
-        return replace(result, obs=np.asarray(result.obs, dtype=np.float32).reshape(-1))
+        super().__init__(env, transforms.flatten)
 
 
-class ChannelFirst(EnvWrapper):
+class ChannelFirst(TransformObservation):
     """[H, W, C] images to [C, H, W], the layout ``CNNEncoder`` and PyTorch expect."""
 
     def __init__(self, env):
-        super().__init__(env)
-        space = env.observation_space
-        if not isinstance(space, Box) or len(space.shape) != 3:
-            raise TypeError("ChannelFirst needs a [H, W, C] Box observation space")
-        h, w, c = space.shape
-        self.observation_space = Box((c, h, w), space.low, space.high)
-
-    def reset(self, seed: Optional[int] = None):
-        obs, info = self.env.reset(seed=seed)
-        return np.moveaxis(np.asarray(obs), -1, 0), info
-
-    def step(self, action) -> StepResult:
-        result = self.env.step(action)
-        return replace(result, obs=np.moveaxis(np.asarray(result.obs), -1, 0))
+        super().__init__(env, transforms.channel_first)

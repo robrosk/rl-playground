@@ -16,6 +16,9 @@ separate methods, and everything else is shared.
 3. **Whose data?** On-policy runners collect a rollout with the current policy, update once
    and discard it. Off-policy runners keep a buffer and sample from it.
 
+4. **How many learners?** `MultiAgentTrainer` runs several, one per seat, each with the
+   schedule its family needs. See `multi_agent.md`.
+
 Runners own time: when to collect, when to update, when to report. Algorithms own math, and
 the math is in `bellman/`.
 
@@ -33,6 +36,15 @@ Runner.run(budget)                            Template Method
     update()          planner.sweep metrics, or learner.update(batch)
     after_update()    clear the rollout
     callbacks.on_update(t, metrics)           Observer
+
+scripts/run_multi.py -> build.build_multi_agent_runner(MultiAgentRunConfig)
+    assign(agents, SeatSpecs)                 first match wins
+    Seat(learner, schedule_for(learner))      Strategy per seat
+    ParallelDriver / TurnBasedDriver          Strategy per game shape
+MultiAgentTrainer.run(budget)                 the same Template Method
+    step()            driver.step() -> (agent, Transition) -> seat.record
+    ready_to_update() any seat due
+    update()          every due seat updates; metrics prefixed by seat
 ```
 
 ## Design patterns
@@ -40,12 +52,12 @@ Runner.run(budget)                            Template Method
 | Pattern | Where | Why it fits |
 | --- | --- | --- |
 | Bridge | `values/` | Algorithms ask a value interface for values and updates. `TabularQ` and `NeuralQ` implement it, so one algorithm runs on a table or a network. |
-| Strategy | `bellman/`, `policies/`, planners, learners | Each backup, exploration rule and algorithm is swappable behind one call signature. |
-| Template Method | `runners/base.py` | `Runner.run` is written once; subclasses say what a step is and when an update is due. |
-| Factory | `build.py`, `networks/factory.py` | Builds runners from configs and networks from spaces, instead of `if is_image_obs` branches. |
+| Strategy | `bellman/`, `policies/`, planners, learners, `multi_agent/` | Each backup, exploration rule and algorithm is swappable behind one call signature; each seat picks its learner and update schedule, and the trainer picks a parallel or turn-based driver. |
+| Template Method | `runners/base.py` | `Runner.run` is written once; subclasses, `MultiAgentTrainer` included, say what a step is and when an update is due. |
+| Factory | `build.py`, `networks/factory.py`, `multi_agent/schedules.py::schedule_for` | Builds runners from configs and networks from spaces, instead of `if is_image_obs` branches. |
 | Registry | `core/registry.py`, `algorithms/__init__.py`, `envs/__init__.py`, `envs/catalog.py` | Names to classes, lazily, so torch loads only for deep methods; each environment is one catalog line. |
-| Adapter | `envs/gym_adapter.py`, `envs/multi_agent/`, `mdp/from_env.py` | Gymnasium, PettingZoo and custom envs share one `Env`; a known env becomes a `TabularMDP`. |
-| Decorator | `envs/wrappers.py` | `OneHot`, `TimeLimit`, `ChannelFirst` and `FlattenObservation` stack around any env without changing it. |
+| Adapter | `envs/gym_adapter.py`, `envs/multi_agent/`, `mdp/from_env.py`, `multi_agent/seats.py::PolicyLearner` | Gymnasium, PettingZoo and custom envs share one `Env`; a known env becomes a `TabularMDP`; a fixed policy sits in a seat like a learner. |
+| Decorator | `envs/wrappers.py`, `envs/multi_agent/wrappers.py` | `OneHot`, `TimeLimit`, `ChannelFirst` and `FlattenObservation` stack around any env without changing it; per-agent transforms do the same for one agent of a game. |
 | Composite | `losses/composite.py` | PPO's loss is a weighted sum of terms, each reporting its own metrics. |
 | Iterator | `collectors/`, `data/` | Collectors yield transitions; buffers yield minibatches. |
 | Observer | `core/callbacks.py` | Console, CSV, checkpoints and the contraction check subscribe to runner events. |

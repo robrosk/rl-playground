@@ -56,3 +56,22 @@ class LatestTransition:
 
     def sample(self, batch_size: int, rng) -> Batch:
         return Batch.from_transitions([self._last])
+
+
+class NewTransitions:
+    """What arrived since the last sample, all of it, then empty. Online learners in a shared
+    multi-agent seat use it, since one env step can bring a transition from every agent and
+    ``LatestTransition`` would keep only the last."""
+
+    def __init__(self):
+        self._data: List[Transition] = []
+
+    def add(self, transition: Transition) -> None:
+        self._data.append(transition)
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def sample(self, batch_size: int, rng) -> Batch:
+        batch, self._data = Batch.from_transitions(self._data), []
+        return batch

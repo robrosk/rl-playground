@@ -56,29 +56,31 @@ class MultiAgentSpec:
         return is_installed(self.extra)
 
     def make_multi_agent(self, **overrides):
+        """The multi-agent env with this spec's preset applied to every agent."""
         require(self.extra, self.name)
         from rl_playground.envs.multi_agent.pettingzoo_adapter import PettingZooParallel, PettingZooTurnBased
+        from rl_playground.envs.multi_agent.wrappers import transform_observations
+        from rl_playground.envs.transforms import PRESETS
 
         module = importlib.import_module(latest_module(self.module, self.version))
         kwargs = {**self.kwargs, **overrides}
         if self.api == "parallel":
-            return PettingZooParallel(module.parallel_env(**kwargs))
-        if self.api == "turn_based":
-            return PettingZooTurnBased(module.env(**kwargs))
-        raise ValueError(f"api must be 'parallel' or 'turn_based', got {self.api!r}")
+            env = PettingZooParallel(module.parallel_env(**kwargs))
+        elif self.api == "turn_based":
+            env = PettingZooTurnBased(module.env(**kwargs))
+        else:
+            raise ValueError(f"api must be 'parallel' or 'turn_based', got {self.api!r}")
+        if self.preset is None:
+            return env
+        return transform_observations(env, {a: PRESETS[self.preset] for a in env.possible_agents})
 
     def make(self, agent: Optional[str] = None, others=None, seed: Optional[int] = 0, **overrides):
+        """The game seen by one learner in seat ``agent``, the others playing ``others``."""
         from rl_playground.envs.multi_agent.single_agent import ParallelSingleAgent, TurnBasedSingleAgent
-        from rl_playground.envs.wrappers import ChannelFirst, FlattenObservation
 
         env = self.make_multi_agent(**overrides)
-        view_cls = ParallelSingleAgent if self.api == "parallel" else TurnBasedSingleAgent
-        view = view_cls(env, agent=agent, others=others, seed=seed)
-        if self.preset == "flatten":
-            return FlattenObservation(view)
-        if self.preset == "image":
-            return ChannelFirst(view)
-        return view
+        view_cls = TurnBasedSingleAgent if hasattr(env, "last") else ParallelSingleAgent
+        return view_cls(env, agent=agent, others=others, seed=seed)
 
 
 def _specs(suite: str, api: str, extra: Extras, rows) -> Tuple[MultiAgentSpec, ...]:

@@ -79,6 +79,15 @@ python scripts/run.py q_learning --env frozen_lake --budget 50000 --set alpha=0.
 python scripts/run.py ppo --env gym:Acrobot-v1 --budget 500000
 ```
 
+Multi-agent games give each agent its own algorithm, or one shared learner for a group:
+
+```bash
+python scripts/run_multi.py --env connect_four --seat player_0=ppo --seat player_1=dqn
+python scripts/run_multi.py --env tictactoe --seat "*=ppo:shared"   # self-play
+```
+
+See `docs/multi_agent.md`.
+
 ## Environments
 
 65 environments by name: the hand-built tabular ones, Gymnasium's toy text, classic
@@ -101,7 +110,7 @@ Suites beyond numpy and Gymnasium are pip extras (`box2d`, `mujoco`, `atari`, `p
 rl_playground/
   core/          types, config, registry, callbacks, arrays
   envs/          Env interface, catalogs, Gymnasium adapter, wrappers, Frozen Lake, gridworld
-    multi_agent/ PettingZoo adapters and single-agent views
+    multi_agent/ PettingZoo adapters, per-agent wrappers, single-agent views
   mdp/           TabularMDP, from_env, random and hand-checkable MDPs
   bellman/       exact.py, sampled.py, returns.py
   values/        tabular and neural V and Q behind one interface
@@ -111,7 +120,8 @@ rl_playground/
   collectors/    env stepping with terminated and truncated kept apart
   losses/        PPO terms, TD losses, composite
   algorithms/    planning/, tabular/, on_policy/, off_policy/, model_based/
-  runners/       the Runner template and its three subclasses
+  multi_agent/   seats, update schedules, parallel and turn-based drivers
+  runners/       the Runner template and its subclasses, including MultiAgentTrainer
   eval/          greedy evaluation, distance to the optimum
   build.py       config to a ready runner
 scripts/run.py, scripts/list_envs.py
