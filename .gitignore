@@ -5,3 +5,4 @@ __pycache__/
 runs/
 checkpoints/
 *.egg-info/
+MUJOCO_LOG.TXT
