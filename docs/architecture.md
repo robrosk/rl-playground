@@ -43,9 +43,9 @@ Runner.run(budget)                            Template Method
 | Strategy | `bellman/`, `policies/`, planners, learners | Each backup, exploration rule and algorithm is swappable behind one call signature. |
 | Template Method | `runners/base.py` | `Runner.run` is written once; subclasses say what a step is and when an update is due. |
 | Factory | `build.py`, `networks/factory.py` | Builds runners from configs and networks from spaces, instead of `if is_image_obs` branches. |
-| Registry | `core/registry.py`, `algorithms/__init__.py`, `envs/__init__.py` | Names to classes, lazily, so torch loads only for deep methods. |
-| Adapter | `envs/gym_adapter.py`, `mdp/from_env.py` | Gymnasium and custom envs share one `Env`; a known env becomes a `TabularMDP`. |
-| Decorator | `envs/wrappers.py` | `OneHot`, `TimeLimit` and friends stack around any env without changing it. |
+| Registry | `core/registry.py`, `algorithms/__init__.py`, `envs/__init__.py`, `envs/catalog.py` | Names to classes, lazily, so torch loads only for deep methods; each environment is one catalog line. |
+| Adapter | `envs/gym_adapter.py`, `envs/multi_agent/`, `mdp/from_env.py` | Gymnasium, PettingZoo and custom envs share one `Env`; a known env becomes a `TabularMDP`. |
+| Decorator | `envs/wrappers.py` | `OneHot`, `TimeLimit`, `ChannelFirst` and `FlattenObservation` stack around any env without changing it. |
 | Composite | `losses/composite.py` | PPO's loss is a weighted sum of terms, each reporting its own metrics. |
 | Iterator | `collectors/`, `data/` | Collectors yield transitions; buffers yield minibatches. |
 | Observer | `core/callbacks.py` | Console, CSV, checkpoints and the contraction check subscribe to runner events. |

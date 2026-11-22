@@ -24,7 +24,9 @@ from rl_playground.runners import OffPolicyTrainer, OnPolicyTrainer, PlanningRun
 
 
 def make_env(name: str):
-    """A registered name, or ``gym:<id>`` for any gymnasium env."""
+    """A registered name (``scripts/list_envs.py`` lists them), or ``gym:<id>`` for any
+    gymnasium id. A PettingZoo name gives the game as seen by its first agent against random
+    opponents; ``envs.MULTI_AGENT_ENVS`` has the multi-agent env itself."""
     if name.startswith("gym:"):
         return GymAdapter(name[len("gym:"):])
     return ENVS.make(name)

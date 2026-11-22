@@ -79,12 +79,29 @@ python scripts/run.py q_learning --env frozen_lake --budget 50000 --set alpha=0.
 python scripts/run.py ppo --env gym:Acrobot-v1 --budget 500000
 ```
 
+## Environments
+
+65 environments by name: the hand-built tabular ones, Gymnasium's toy text, classic
+control, Box2D, MuJoCo and Atari, and PettingZoo's board, card, cooperative and particle-world
+games. Any other Gymnasium id runs as `gym:<id>`.
+
+```bash
+python scripts/list_envs.py
+python scripts/run.py value_iteration --env taxi
+python scripts/run.py dqn --env pong --budget 1000000
+python scripts/run.py ppo --env connect_four --budget 200000   # first seat vs random
+```
+
+Suites beyond numpy and Gymnasium are pip extras (`box2d`, `mujoco`, `atari`, `pettingzoo`,
+...), or `pip install -e ".[envs]"` for all of them. See `docs/environments.md`.
+
 ## Layout
 
 ```text
 rl_playground/
   core/          types, config, registry, callbacks, arrays
-  envs/          Env interface, gym adapter, Frozen Lake, gridworld, wrappers
+  envs/          Env interface, catalogs, Gymnasium adapter, wrappers, Frozen Lake, gridworld
+    multi_agent/ PettingZoo adapters and single-agent views
   mdp/           TabularMDP, from_env, random and hand-checkable MDPs
   bellman/       exact.py, sampled.py, returns.py
   values/        tabular and neural V and Q behind one interface
@@ -97,7 +114,7 @@ rl_playground/
   runners/       the Runner template and its three subclasses
   eval/          greedy evaluation, distance to the optimum
   build.py       config to a ready runner
-scripts/run.py
+scripts/run.py, scripts/list_envs.py
 docs/
 tests/
 ```
